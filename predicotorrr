@@ -1,278 +1,275 @@
--- All-In-One Grow a Garden Pet Predictor with Loading Screen
+-- Loadstring support: skip loading screen if already executed
+if game.CoreGui:FindFirstChild("PetPredictor") then return end
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
+-- Create loading screen
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 
--- Cleanup old GUI
-if CoreGui:FindFirstChild("PetPredictor") then
-    CoreGui.PetPredictor:Destroy()
-end
+local loadingGui = Instance.new("ScreenGui", CoreGui)
+loadingGui.Name = "LoadingScreen"
+loadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- 1️⃣ Loading Screen Setup
-local loadGui = Instance.new("ScreenGui", CoreGui)
-loadGui.Name = "PetPredictor"
+local loadingFrame = Instance.new("Frame", loadingGui)
+loadingFrame.Size = UDim2.new(0, 400, 0, 100)
+loadingFrame.Position = UDim2.new(0.5, -200, 0.5, -50)
+loadingFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+loadingFrame.BorderSizePixel = 0
+Instance.new("UICorner", loadingFrame).CornerRadius = UDim.new(0, 8)
 
-local bg = Instance.new("Frame", loadGui)
-bg.Size = UDim2.new(1,0,1,0)
-bg.BackgroundColor3 = Color3.new(0,0,0)
+local loadingText = Instance.new("TextLabel", loadingFrame)
+loadingText.Size = UDim2.new(1, 0, 0.5, 0)
+loadingText.Position = UDim2.new(0, 0, 0, 0)
+loadingText.BackgroundTransparency = 1
+loadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadingText.Text = "Initializing..."
+loadingText.Font = Enum.Font.GothamBold
+loadingText.TextSize = 18
 
-local statusLabel = Instance.new("TextLabel", bg)
-statusLabel.Size = UDim2.new(1,0,0,60)
-statusLabel.Position = UDim2.new(0,0,0.4,0)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = Color3.new(1,1,1)
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.TextScaled = true
-statusLabel.Text = "Initializing..."
+local progressBar = Instance.new("Frame", loadingFrame)
+progressBar.Size = UDim2.new(0, 0, 0.25, 0)
+progressBar.Position = UDim2.new(0, 0, 0.7, 0)
+progressBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+Instance.new("UICorner", progressBar).CornerRadius = UDim.new(0, 6)
 
-local barBg = Instance.new("Frame", bg)
-barBg.Size = UDim2.new(0.5,0,0,20)
-barBg.Position = UDim2.new(0.25,0,0.5,0)
-barBg.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Instance.new("UICorner", barBg)
+local fill = Instance.new("Frame", progressBar)
+fill.Size = UDim2.new(0, 0, 1, 0)
+fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+fill.BorderSizePixel = 0
+fill.Name = "Fill"
+Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 6)
 
-local bar = Instance.new("Frame", barBg)
-bar.Size = UDim2.new(0,0,1,0)
-bar.BackgroundColor3 = Color3.fromRGB(0,255,100)
-Instance.new("UICorner", bar)
-
--- Simulated loading steps
-local steps = {
-    {text="Finding Eggs...", prog=0.2, wait=0.8},
-    {text="Injecting Predictor...", prog=0.4, wait=1.0},
-    {text="Scanning Player...", prog=0.6, wait=0.7},
-    {text="Allocating UI...", prog=0.8, wait=1.2},
-    {text="Finalizing Tools...", prog=1.0, wait=0.6}
+-- Simulate loading
+local loadingSteps = {
+    "Finding eggs...",
+    "Loading prediction models...",
+    "Preparing GUI...",
+    "Finalizing setup..."
 }
 
-for _,v in ipairs(steps) do
-    statusLabel.Text = v.text
-    bar:TweenSize(UDim2.new(v.prog,0,1,0),"Out","Quad",0.5,true)
-    wait(v.wait)
-end
+coroutine.wrap(function()
+    for i, step in ipairs(loadingSteps) do
+        loadingText.Text = step
+        TweenService:Create(fill, TweenInfo.new(0.4), {Size = UDim2.new(i/#loadingSteps, 0, 1, 0)}):Play()
+        wait(0.6 + math.random())
+    end
+    wait(0.5)
+    loadingGui:Destroy()
+end)()
 
-statusLabel.Text = "Launch Successful!"
-wait(0.5)
-loadGui:Destroy()
+-- Delay until loading screen ends
+wait(4)
 
--- 2️⃣ Egg Data
+-- Real Script Begins
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+-- Egg Data
 local eggPets = {
     ["Common Egg"] = {
-        {name="Dog",chance=33,color=Color3.fromRGB(200,200,200)},
-        {name="Bunny",chance=33,color=Color3.fromRGB(200,200,200)},
-        {name="Golden Lab",chance=34,color=Color3.fromRGB(255,215,0)}
+        {name = "Dog", chance = 33, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Bunny", chance = 33, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Golden Lab", chance = 34, color = Color3.fromRGB(255, 215, 0)}
     },
     ["Uncommon Egg"] = {
-        {name="Cat",chance=25,color=Color3.fromRGB(200,200,200)},
-        {name="Chicken",chance=25,color=Color3.fromRGB(200,200,200)},
-        {name="Deer",chance=25,color=Color3.fromRGB(200,200,200)},
-        {name="Black Bunny",chance=25,color=Color3.fromRGB(100,100,100)}
+        {name = "Cat", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Chicken", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Deer", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Black Bunny", chance = 25, color = Color3.fromRGB(100, 100, 100)}
     },
     ["Rare Egg"] = {
-        {name="Orange Tabby",chance=33,color=Color3.fromRGB(255,165,0)},
-        {name="Spotted Deer",chance=25,color=Color3.fromRGB(200,200,200)},
-        {name="Pig",chance=16.7,color=Color3.fromRGB(255,182,193)},
-        {name="Rooster",chance=16.7,color=Color3.fromRGB(255,0,0)},
-        {name="Monkey",chance=8.3,color=Color3.fromRGB(139,69,19)}
+        {name = "Orange Tabby", chance = 33, color = Color3.fromRGB(255, 165, 0)},
+        {name = "Spotted Deer", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Pig", chance = 16.7, color = Color3.fromRGB(255, 182, 193)},
+        {name = "Rooster", chance = 16.7, color = Color3.fromRGB(255, 0, 0)},
+        {name = "Monkey", chance = 8.3, color = Color3.fromRGB(139, 69, 19)}
     },
     ["Legendary Egg"] = {
-        {name="Cow",chance=42.6,color=Color3.fromRGB(255,255,255)},
-        {name="Silver Monkey",chance=42.6,color=Color3.fromRGB(192,192,192)},
-        {name="Sea Otter",chance=10.6,color=Color3.fromRGB(135,206,250)},
-        {name="Turtle",chance=2.1,color=Color3.fromRGB(0,128,0)},
-        {name="Polar Bear",chance=2.1,color=Color3.fromRGB(255,255,255)}
+        {name = "Cow", chance = 42.6, color = Color3.fromRGB(255, 255, 255)},
+        {name = "Silver Monkey", chance = 42.6, color = Color3.fromRGB(192, 192, 192)},
+        {name = "Sea Otter", chance = 10.6, color = Color3.fromRGB(135, 206, 250)},
+        {name = "Turtle", chance = 2.1, color = Color3.fromRGB(0, 128, 0)},
+        {name = "Polar Bear", chance = 2.1, color = Color3.fromRGB(255, 255, 255)}
     },
     ["Mythical Egg"] = {
-        {name="Grey Mouse",chance=35.7,color=Color3.fromRGB(190,190,190)},
-        {name="Brown Mouse",chance=26.8,color=Color3.fromRGB(139,69,19)},
-        {name="Squirrel",chance=26.8,color=Color3.fromRGB(160,82,45)},
-        {name="Red Giant Ant",chance=8.9,color=Color3.fromRGB(255,0,0)},
-        {name="Red Fox",chance=1.8,color=Color3.fromRGB(255,69,0)}
+        {name = "Grey Mouse", chance = 35.7, color = Color3.fromRGB(190, 190, 190)},
+        {name = "Brown Mouse", chance = 26.8, color = Color3.fromRGB(139, 69, 19)},
+        {name = "Squirrel", chance = 26.8, color = Color3.fromRGB(160, 82, 45)},
+        {name = "Red Giant Ant", chance = 8.9, color = Color3.fromRGB(255, 0, 0)},
+        {name = "Red Fox", chance = 1.8, color = Color3.fromRGB(255, 69, 0)}
     },
     ["Bug Egg"] = {
-        {name="Snail",chance=40,color=Color3.fromRGB(153,101,21)},
-        {name="Giant Ant",chance=30,color=Color3.fromRGB(255,0,0)},
-        {name="Caterpillar",chance=25,color=Color3.fromRGB(50,205,50)},
-        {name="Praying Mantis",chance=4,color=Color3.fromRGB(0,128,0)},
-        {name="Dragonfly",chance=1,color=Color3.fromRGB(0,191,255)}
+        {name = "Snail", chance = 40, color = Color3.fromRGB(153, 101, 21)},
+        {name = "Giant Ant", chance = 30, color = Color3.fromRGB(255, 0, 0)},
+        {name = "Caterpillar", chance = 25, color = Color3.fromRGB(50, 205, 50)},
+        {name = "Praying Mantis", chance = 4, color = Color3.fromRGB(0, 128, 0)},
+        {name = "Dragonfly", chance = 1, color = Color3.fromRGB(0, 191, 255)}
     },
     ["Dinosaur Egg"] = {
-        {name="Raptor",chance=35,color=Color3.fromRGB(200,200,200)},
-        {name="Triceratops",chance=32.5,color=Color3.fromRGB(120,255,120)},
-        {name="Stegosaurus",chance=28,color=Color3.fromRGB(120,120,255)},
-        {name="Pterodactyl",chance=3,color=Color3.fromRGB(255,200,0)},
-        {name="Brontosaurus",chance=1,color=Color3.fromRGB(255,105,180)},
-        {name="T-Rex",chance=0.5,color=Color3.fromRGB(255,0,0)}
+        {name = "Raptor", chance = 35, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Triceratops", chance = 32.5, color = Color3.fromRGB(120, 255, 120)},
+        {name = "Stegosaurus", chance = 28, color = Color3.fromRGB(120, 120, 255)},
+        {name = "Pterodactyl", chance = 3, color = Color3.fromRGB(255, 200, 0)},
+        {name = "Brontosaurus", chance = 1, color = Color3.fromRGB(255, 105, 180)},
+        {name = "T-Rex", chance = 0.5, color = Color3.fromRGB(255, 0, 0)}
     },
     ["Anti Bee Egg"] = {
-        {name="Wasp",chance=55,color=Color3.fromRGB(200,200,200)},
-        {name="Tarantula Hawk",chance=30,color=Color3.fromRGB(255,80,80)},
-        {name="Moth",chance=13.75,color=Color3.fromRGB(180,180,255)},
-        {name="Butterfly",chance=1,color=Color3.fromRGB(255,105,180)},
-        {name="Disco Bee",chance=0.25,color=Color3.fromRGB(255,0,255)}
+        {name = "Wasp", chance = 55, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Tarantula Hawk", chance = 30, color = Color3.fromRGB(255, 80, 80)},
+        {name = "Moth", chance = 13.75, color = Color3.fromRGB(180, 180, 255)},
+        {name = "Butterfly", chance = 1, color = Color3.fromRGB(255, 105, 180)},
+        {name = "Disco Bee", chance = 0.25, color = Color3.fromRGB(255, 0, 255)}
     }
 }
 
-local function pickWeighted(petList)
+-- Weighted Picker
+local function pickWeightedPet(petList)
     local total = 0
-    for _,p in ipairs(petList) do total += p.chance end
-    local r = math.random() * total
-    local s=0
-    for _,p in ipairs(petList) do
-        s+=p.chance
-        if r<=s then return p end
+    for _, p in pairs(petList) do total += p.chance end
+    local rand = math.random() * total
+    local sum = 0
+    for _, p in ipairs(petList) do
+        sum += p.chance
+        if rand <= sum then return p end
     end
     return petList[#petList]
 end
 
--- 3️⃣ Predictor GUI Setup
+-- GUI
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "PetPredictor"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,280,0,220)
-frame.Position = UDim2.new(0.5,-140,0.5,-110)
-frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.Size = UDim2.new(0, 260, 0, 180)
+frame.Position = UDim2.new(0.5, -130, 0.5, -90)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.Active, frame.Draggable = true, true
 Instance.new("UICorner", frame)
 
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,25)
 title.Text = "Pet Predictor"
-title.TextColor3 = Color3.new(1,1,1)
+title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
+title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 16
+title.TextSize = 18
 
-local eggBtn = Instance.new("TextButton", frame)
-eggBtn.Position = UDim2.new(0.1,0,0.2,0)
-eggBtn.Size = UDim2.new(0.8,0,0,30)
-eggBtn.Text = "Select Nearest Egg"
-eggBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-eggBtn.TextColor3 = Color3.new(1,1,1)
-eggBtn.Font = Enum.Font.Gotham
-eggBtn.TextSize = 14
-Instance.new("UICorner", eggBtn)
+local eggButton = Instance.new("TextButton", frame)
+eggButton.Position = UDim2.new(0.1, 0, 0.25, 0)
+eggButton.Size = UDim2.new(0.8, 0, 0, 30)
+eggButton.Text = "Select Nearest Egg"
+eggButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+eggButton.TextColor3 = Color3.new(1, 1, 1)
+eggButton.Font = Enum.Font.Gotham
+eggButton.TextSize = 14
+Instance.new("UICorner", eggButton)
 
-local predictBtn = Instance.new("TextButton", frame)
-predictBtn.Position = UDim2.new(0.1,0,0.45,0)
-predictBtn.Size = UDim2.new(0.8,0,0,30)
-predictBtn.Text = "Predict Pet"
-predictBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
-predictBtn.TextColor3 = Color3.new(0,0,0)
-predictBtn.Font = Enum.Font.GothamBold
-predictBtn.TextSize = 14
-Instance.new("UICorner", predictBtn)
+local predictButton = Instance.new("TextButton", frame)
+predictButton.Position = UDim2.new(0.1, 0, 0.5, 0)
+predictButton.Size = UDim2.new(0.8, 0, 0, 30)
+predictButton.Text = "Predict Pet"
+predictButton.BackgroundColor3 = Color3.fromRGB(90, 200, 90)
+predictButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+predictButton.Font = Enum.Font.GothamBold
+predictButton.TextSize = 14
+Instance.new("UICorner", predictButton)
 
-local restartBtn = Instance.new("TextButton", frame)
-restartBtn.Position = UDim2.new(0.1,0,0.7,0)
-restartBtn.Size = UDim2.new(0.8,0,0,30)
-restartBtn.Text = "Auto-Restart: OFF"
-restartBtn.BackgroundColor3 = Color3.fromRGB(75,75,75)
-restartBtn.TextColor3 = Color3.new(1,1,1)
-restartBtn.Font = Enum.Font.Gotham
-restartBtn.TextSize = 13
-Instance.new("UICorner", restartBtn)
+local autoRestart = Instance.new("TextButton", frame)
+autoRestart.Position = UDim2.new(0.1, 0, 0.72, 0)
+autoRestart.Size = UDim2.new(0.8, 0, 0, 30)
+autoRestart.Text = "Auto-Restart: OFF"
+autoRestart.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+autoRestart.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoRestart.Font = Enum.Font.Gotham
+autoRestart.TextSize = 13
+Instance.new("UICorner", autoRestart)
 
-local minBtn = Instance.new("TextButton", frame)
-minBtn.Position = UDim2.new(1,-30,0,0)
-minBtn.Size = UDim2.new(0,25,0,25)
-minBtn.Text = "-"
-minBtn.Font = Enum.Font.GothamBold
-minBtn.TextSize = 18
-minBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-minBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", minBtn)
+-- Prediction Logic
+local selectedEgg, running, auto = nil, false, false
+local timerLabel = nil
 
--- Variables
-local selectedEgg, running, autoRestart = nil, false, false
-
-local function findEgg()
-    local best, dist = nil, math.huge
-    if not LocalPlayer.Character then return end
-    for _,m in pairs(Workspace:GetDescendants()) do
-        if m:IsA("Model") and m:FindFirstChildWhichIsA("BasePart") and m.Name:lower():find("egg") then
-            local d = (LocalPlayer.Character.HumanoidRootPart.Position - m:GetPivot().Position).Magnitude
-            if d < dist then dist, best = d, m end
+local function getNearestEgg()
+    local min = math.huge
+    local nearest
+    for _, model in pairs(Workspace:GetDescendants()) do
+        if model:IsA("Model") and model:FindFirstChildWhichIsA("BasePart") and string.find(model.Name:lower(), "egg") then
+            local part = model:FindFirstChildWhichIsA("BasePart")
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - part.Position).Magnitude
+            if dist < min then min = dist; nearest = model end
         end
     end
-    return best
+    return nearest
 end
 
-local function showOnEgg(egg, pet)
-    local part=egg:FindFirstChildWhichIsA("BasePart")
-    if not part then return end
-    if egg:FindFirstChild("PredictionGui") then egg.PredictionGui:Destroy() end
+local function showPrediction(pet)
+    local base = selectedEgg and selectedEgg:FindFirstChildWhichIsA("BasePart")
+    if not base then return end
+    if selectedEgg:FindFirstChild("PredictionGui") then selectedEgg.PredictionGui:Destroy() end
 
-    local gui = Instance.new("BillboardGui", egg)
-    gui.Name="PredictionGui"
-    gui.Adornee=part
-    gui.Size=UDim2.new(0,200,0,50)
-    gui.StudsOffset=Vector3.new(0,4,0)
-    gui.AlwaysOnTop=true
+    local gui = Instance.new("BillboardGui", selectedEgg)
+    gui.Name = "PredictionGui"
+    gui.Adornee = base
+    gui.Size = UDim2.new(0, 200, 0, 50)
+    gui.StudsOffset = Vector3.new(0, 4, 0)
+    gui.AlwaysOnTop = true
 
-    local lbl=Instance.new("TextLabel", gui)
-    lbl.Size=UDim2.new(1,0,0.5,0)
-    lbl.BackgroundTransparency=1
-    lbl.Text=pet.name
-    lbl.TextColor3=pet.color
-    lbl.Font=Enum.Font.GothamBold
-    lbl.TextScaled=true
+    local name = Instance.new("TextLabel", gui)
+    name.Size = UDim2.new(1, 0, 0.5, 0)
+    name.BackgroundTransparency = 1
+    name.Text = pet.name
+    name.TextColor3 = pet.color
+    name.Font = Enum.Font.GothamBold
+    name.TextScaled = true
 
-    local timr=Instance.new("TextLabel", gui)
-    timr.Name="Timer"
-    timr.Size=UDim2.new(1,0,0.5,0)
-    timr.Position=UDim2.new(0,0,0.5,0)
-    timr.BackgroundTransparency=1
-    timr.Text="30s"
-    timr.TextColor3=Color3.new(0.8,0.8,0.8)
-    timr.Font=Enum.Font.Gotham
-    timr.TextScaled=true
+    timerLabel = Instance.new("TextLabel", gui)
+    timerLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    timerLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    timerLabel.BackgroundTransparency = 1
+    timerLabel.Text = "30s"
+    timerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    timerLabel.Font = Enum.Font.Gotham
+    timerLabel.TextScaled = true
 end
 
-eggBtn.MouseButton1Click:Connect(function()
-    selectedEgg = findEgg()
-    eggBtn.Text = selectedEgg and ("Egg: "..selectedEgg.Name) or "No Egg Found"
+eggButton.MouseButton1Click:Connect(function()
+    selectedEgg = getNearestEgg()
+    eggButton.Text = selectedEgg and ("Egg: " .. selectedEgg.Name) or "No Egg Found"
 end)
 
-restartBtn.MouseButton1Click:Connect(function()
-    autoRestart = not autoRestart
-    restartBtn.Text = "Auto-Restart: " .. (autoRestart and "ON" or "OFF")
+autoRestart.MouseButton1Click:Connect(function()
+    auto = not auto
+    autoRestart.Text = "Auto-Restart: " .. (auto and "ON" or "OFF")
 end)
 
-predictBtn.MouseButton1Click:Connect(function()
+predictButton.MouseButton1Click:Connect(function()
     if running or not selectedEgg then
-        predictBtn.Text="Select Egg First"
-        task.wait(1)
-        predictBtn.Text="Predict Pet"
+        predictButton.Text = "Select Egg First"
+        wait(1)
+        predictButton.Text = "Predict Pet"
         return
     end
-    running=true; predictBtn.Text="Predicting..."
+
+    local petList = eggPets[selectedEgg.Name]
+    if not petList then
+        predictButton.Text = "Egg Not Supported"
+        wait(1)
+        predictButton.Text = "Predict Pet"
+        return
+    end
+
+    running = true
+    predictButton.Text = "Predicting..."
+
     coroutine.wrap(function()
         repeat
-            local pets=eggPets[selectedEgg.Name]
-            if not pets then break end
-            local p=pickWeighted(pets)
-            showOnEgg(selectedEgg, p)
-            for i=30,1,-1 do
-                local g=selectedEgg:FindFirstChild("PredictionGui")
-                if g and g:FindFirstChild("Timer") then
-                    g.Timer.Text = i.."s"
-                end
-                task.wait(1)
+            local pet = pickWeightedPet(petList)
+            showPrediction(pet)
+            for i = 30, 1, -1 do
+                if timerLabel then timerLabel.Text = i .. "s" end
+                wait(1)
             end
-        until not autoRestart
-        predictBtn.Text="Predict Pet"; running=false
+        until not auto
+        running = false
+        predictButton.Text = "Predict Pet"
     end)()
-end)
-
-minBtn.MouseButton1Click:Connect(function()
-    if frame.Size.Y.Offset>30 then
-        TweenService:Create(frame,TweenInfo.new(0.3),{Size=UDim2.new(frame.Size.X.Scale,frame.Size.X.Offset,0,30)}):Play()
-    else
-        TweenService:Create(frame,TweenInfo.new(0.3),{Size=UDim2.new(frame.Size.X.Scale,frame.Size.X.Offset,0,220)}):Play()
-    end
 end)
