@@ -1,0 +1,225 @@
+-- Pet Predictor for Grow a Garden (All Eggs + Countdown + Auto-Restart Toggle + GUI + Minimize)
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+
+local eggPets = {
+    ["Common Egg"] = {
+        {name = "Dog", chance = 33, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Bunny", chance = 33, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Golden Lab", chance = 34, color = Color3.fromRGB(255, 215, 0)}
+    },
+    ["Uncommon Egg"] = {
+        {name = "Cat", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Chicken", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Deer", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Black Bunny", chance = 25, color = Color3.fromRGB(100, 100, 100)}
+    },
+    ["Rare Egg"] = {
+        {name = "Orange Tabby", chance = 33, color = Color3.fromRGB(255, 165, 0)},
+        {name = "Spotted Deer", chance = 25, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Pig", chance = 16.7, color = Color3.fromRGB(255, 182, 193)},
+        {name = "Rooster", chance = 16.7, color = Color3.fromRGB(255, 0, 0)},
+        {name = "Monkey", chance = 8.3, color = Color3.fromRGB(139, 69, 19)}
+    },
+    ["Legendary Egg"] = {
+        {name = "Cow", chance = 42.6, color = Color3.fromRGB(255, 255, 255)},
+        {name = "Silver Monkey", chance = 42.6, color = Color3.fromRGB(192, 192, 192)},
+        {name = "Sea Otter", chance = 10.6, color = Color3.fromRGB(135, 206, 250)},
+        {name = "Turtle", chance = 2.1, color = Color3.fromRGB(0, 128, 0)},
+        {name = "Polar Bear", chance = 2.1, color = Color3.fromRGB(255, 255, 255)}
+    },
+    ["Mythical Egg"] = {
+        {name = "Grey Mouse", chance = 35.7, color = Color3.fromRGB(190, 190, 190)},
+        {name = "Brown Mouse", chance = 26.8, color = Color3.fromRGB(139, 69, 19)},
+        {name = "Squirrel", chance = 26.8, color = Color3.fromRGB(160, 82, 45)},
+        {name = "Red Giant Ant", chance = 8.9, color = Color3.fromRGB(255, 0, 0)},
+        {name = "Red Fox", chance = 1.8, color = Color3.fromRGB(255, 69, 0)}
+    },
+    ["Bug Egg"] = {
+        {name = "Snail", chance = 40, color = Color3.fromRGB(153, 101, 21)},
+        {name = "Giant Ant", chance = 30, color = Color3.fromRGB(255, 0, 0)},
+        {name = "Caterpillar", chance = 25, color = Color3.fromRGB(50, 205, 50)},
+        {name = "Praying Mantis", chance = 4, color = Color3.fromRGB(0, 128, 0)},
+        {name = "Dragonfly", chance = 1, color = Color3.fromRGB(0, 191, 255)}
+    },
+    ["Dinosaur Egg"] = {
+        {name = "Raptor", chance = 35, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Triceratops", chance = 32.5, color = Color3.fromRGB(120, 255, 120)},
+        {name = "Stegosaurus", chance = 28, color = Color3.fromRGB(120, 120, 255)},
+        {name = "Pterodactyl", chance = 3, color = Color3.fromRGB(255, 200, 0)},
+        {name = "Brontosaurus", chance = 1, color = Color3.fromRGB(255, 105, 180)},
+        {name = "T-Rex", chance = 0.5, color = Color3.fromRGB(255, 0, 0)}
+    },
+    ["Anti Bee Egg"] = {
+        {name = "Wasp", chance = 55, color = Color3.fromRGB(200, 200, 200)},
+        {name = "Tarantula Hawk", chance = 30, color = Color3.fromRGB(255, 80, 80)},
+        {name = "Moth", chance = 13.75, color = Color3.fromRGB(180, 180, 255)},
+        {name = "Butterfly", chance = 1, color = Color3.fromRGB(255, 105, 180)},
+        {name = "Disco Bee", chance = 0.25, color = Color3.fromRGB(255, 0, 255)}
+    }
+}
+
+local function pickWeightedPet(petList)
+    local total = 0
+    for _, pet in pairs(petList) do
+        total += pet.chance
+    end
+    local rand = math.random() * total
+    local cum = 0
+    for _, pet in pairs(petList) do
+        cum += pet.chance
+        if rand <= cum then
+            return pet
+        end
+    end
+    return petList[#petList]
+end
+
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "PetPredictor"
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 270, 0, 210)
+frame.Position = UDim2.new(0.5, -135, 0.5, -105)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 25)
+title.Text = "Pet Predictor"
+title.TextColor3 = Color3.new(1,1,1)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+
+local eggBtn = Instance.new("TextButton", frame)
+eggBtn.Position = UDim2.new(0.1, 0, 0.2, 0)
+eggBtn.Size = UDim2.new(0.8, 0, 0, 30)
+eggBtn.Text = "Select Nearest Egg"
+eggBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+eggBtn.TextColor3 = Color3.new(1,1,1)
+eggBtn.Font = Enum.Font.Gotham
+eggBtn.TextSize = 14
+Instance.new("UICorner", eggBtn)
+
+local predictBtn = Instance.new("TextButton", frame)
+predictBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
+predictBtn.Size = UDim2.new(0.8, 0, 0, 30)
+predictBtn.Text = "Predict Pet"
+predictBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+predictBtn.TextColor3 = Color3.new(0,0,0)
+predictBtn.Font = Enum.Font.GothamBold
+predictBtn.TextSize = 14
+Instance.new("UICorner", predictBtn)
+
+local restartBtn = Instance.new("TextButton", frame)
+restartBtn.Position = UDim2.new(0.1, 0, 0.7, 0)
+restartBtn.Size = UDim2.new(0.8, 0, 0, 30)
+restartBtn.Text = "Auto-Restart: OFF"
+restartBtn.BackgroundColor3 = Color3.fromRGB(75,75,75)
+restartBtn.TextColor3 = Color3.new(1,1,1)
+restartBtn.Font = Enum.Font.Gotham
+restartBtn.TextSize = 13
+Instance.new("UICorner", restartBtn)
+
+local selectedEgg = nil
+local running = false
+local autoRestart = false
+local timerLabel = nil
+local petLabel = nil
+
+local function getNearestEgg()
+    local shortest = math.huge
+    local nearest = nil
+    for _, model in ipairs(Workspace:GetDescendants()) do
+        if model:IsA("Model") and model:FindFirstChildWhichIsA("BasePart") and model.Name:lower():find("egg") then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - model:GetPivot().Position).Magnitude
+            if dist < shortest then
+                shortest = dist
+                nearest = model
+            end
+        end
+    end
+    return nearest
+end
+
+local function showPrediction(egg, pet)
+    local part = egg:FindFirstChildWhichIsA("BasePart")
+    if not part then return end
+
+    if egg:FindFirstChild("PredictionGui") then
+        egg.PredictionGui:Destroy()
+    end
+
+    local gui = Instance.new("BillboardGui", egg)
+    gui.Name = "PredictionGui"
+    gui.Adornee = part
+    gui.Size = UDim2.new(0, 200, 0, 50)
+    gui.StudsOffset = Vector3.new(0, 4, 0)
+    gui.AlwaysOnTop = true
+
+    petLabel = Instance.new("TextLabel", gui)
+    petLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    petLabel.BackgroundTransparency = 1
+    petLabel.Text = pet.name
+    petLabel.TextColor3 = pet.color
+    petLabel.Font = Enum.Font.GothamBold
+    petLabel.TextScaled = true
+
+    timerLabel = Instance.new("TextLabel", gui)
+    timerLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    timerLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    timerLabel.BackgroundTransparency = 1
+    timerLabel.Text = "30s"
+    timerLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    timerLabel.Font = Enum.Font.Gotham
+    timerLabel.TextScaled = true
+end
+
+eggBtn.MouseButton1Click:Connect(function()
+    selectedEgg = getNearestEgg()
+    eggBtn.Text = selectedEgg and ("Egg: " .. selectedEgg.Name) or "No Egg Found"
+end)
+
+restartBtn.MouseButton1Click:Connect(function()
+    autoRestart = not autoRestart
+    restartBtn.Text = "Auto-Restart: " .. (autoRestart and "ON" or "OFF")
+end)
+
+predictBtn.MouseButton1Click:Connect(function()
+    if running or not selectedEgg then
+        predictBtn.Text = "Select Egg First"
+        task.wait(1)
+        predictBtn.Text = "Predict Pet"
+        return
+    end
+
+    local list = eggPets[selectedEgg.Name]
+    if not list then
+        predictBtn.Text = "Egg Not Supported"
+        task.wait(1)
+        predictBtn.Text = "Predict Pet"
+        return
+    end
+
+    running = true
+    predictBtn.Text = "Predicting..."
+
+    coroutine.wrap(function()
+        repeat
+            local pet = pickWeightedPet(list)
+            showPrediction(selectedEgg, pet)
+            for i = 30, 1, -1 do
+                if timerLabel then timerLabel.Text = i .. "s" end
+                task.wait(1)
+            end
+        until not autoRestart
+        predictBtn.Text = "Predict Pet"
+        running = false
+    end)()
+end)
